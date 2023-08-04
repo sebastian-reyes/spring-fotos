@@ -16,4 +16,9 @@ public class ProductoService implements IProductoService {
     public Producto buscarProducto(int id) {
         return repository.findById(id).orElse(null);
     }
+
+    @Override
+    public Producto guardarProducto(Producto p) {
+        return repository.save(p);
+    }
 }

@@ -7,17 +7,18 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.activation.FileTypeMap;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/productos")
@@ -32,7 +33,7 @@ public class ProductoRestController {
         Map<String, Object> response = new HashMap<>();
         try {
             producto = service.buscarProducto(id);
-            if(producto == null){
+            if (producto == null) {
                 response.put("mensaje", "El producto no se encuentra en la base de datos.");
                 return new ResponseEntity<Map<String, Object>>(response, HttpStatus.NOT_FOUND);
             }
@@ -69,5 +70,41 @@ public class ProductoRestController {
             response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
             return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @PostMapping("/foto")
+    public ResponseEntity<?> subirFoto(@RequestParam("foto") MultipartFile foto, @RequestParam("id") Integer id) {
+        Producto producto = service.buscarProducto(id);
+        Map<String, Object> response = new HashMap<>();
+        if (foto.isEmpty() || id == null) {
+            response.put("mensaje", "Los campos no pueden estar vacíos");
+            return new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST);
+        }
+        String nombreFoto = UUID.randomUUID().toString() + "_" + foto.getOriginalFilename().replace(" ", "");
+        Path rutaFoto = Paths.get("src\\main\\resources\\static\\fotos").resolve(nombreFoto).toAbsolutePath();
+        try {
+            Files.copy(foto.getInputStream(), rutaFoto);
+        } catch (Exception e) {
+            response.put("mensaje", "Error al subir la imagen");
+            return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        /*
+         * Acá borramos la foto anterior del usuario en caso que suba una
+         * nueva (Actualizar foto)
+         */
+        String nombreFotoAnterior = producto.getFoto();
+        if (nombreFotoAnterior != null && nombreFotoAnterior.length() > 0) {
+            Path rutaFotoAnterior = Paths.get("src\\main\\resources\\static\\fotos").resolve(nombreFotoAnterior).toAbsolutePath();
+            File archivoFotoAnterior = rutaFotoAnterior.toFile();
+            if(archivoFotoAnterior.exists() && archivoFotoAnterior.canRead()){
+                archivoFotoAnterior.delete();
+            }
+        }
+        //Se guarda la foto y retornamos el producto más un mensaje
+        producto.setFoto(nombreFoto);
+        service.guardarProducto(producto);
+        response.put("producto", producto);
+        response.put("mensaje", "Ha subido correctamente la imagen" + nombreFoto);
+        return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
     }
 }

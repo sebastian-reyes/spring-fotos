@@ -32,4 +32,8 @@ public class Producto implements Serializable {
      */
     private static final long serialVersionUID = 1L;
 
+    public String getUrlFoto() {
+        return "http://localhost:9898/productos/foto/" + getId();
+    }
+
 }

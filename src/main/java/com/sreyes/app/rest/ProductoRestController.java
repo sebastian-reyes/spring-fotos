@@ -76,7 +76,7 @@ public class ProductoRestController {
     public ResponseEntity<?> subirFoto(@RequestParam("foto") MultipartFile foto, @RequestParam("id") Integer id) {
         Producto producto = service.buscarProducto(id);
         Map<String, Object> response = new HashMap<>();
-        if (foto.isEmpty() || id == null) {
+        if (foto.isEmpty()) {
             response.put("mensaje", "Los campos no pueden estar vacíos");
             return new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST);
         }
@@ -96,7 +96,7 @@ public class ProductoRestController {
         if (nombreFotoAnterior != null && nombreFotoAnterior.length() > 0) {
             Path rutaFotoAnterior = Paths.get("src\\main\\resources\\static\\fotos").resolve(nombreFotoAnterior).toAbsolutePath();
             File archivoFotoAnterior = rutaFotoAnterior.toFile();
-            if(archivoFotoAnterior.exists() && archivoFotoAnterior.canRead()){
+            if (archivoFotoAnterior.exists() && archivoFotoAnterior.canRead()) {
                 archivoFotoAnterior.delete();
             }
         }
@@ -104,7 +104,41 @@ public class ProductoRestController {
         producto.setFoto(nombreFoto);
         service.guardarProducto(producto);
         response.put("producto", producto);
-        response.put("mensaje", "Ha subido correctamente la imagen" + nombreFoto);
+        response.put("mensaje", "Ha subido correctamente la imagen: " + nombreFoto);
+        return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/registrar")
+    public ResponseEntity<?> guardarUsuario(@RequestParam("foto") MultipartFile foto,
+                                            @RequestParam String nombre,
+                                            @RequestParam String desc) {
+        Producto nuevoProducto = new Producto();
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (nombre == null || desc == null || foto.isEmpty()) {
+                response.put("mensaje", "Faltan parámetros obligatorios.");
+                return new ResponseEntity<Map<String, Object>>(response, HttpStatus.BAD_REQUEST);
+            }
+            String nombreFoto = UUID.randomUUID().toString() + "_" + foto.getOriginalFilename().replace(" ", "");
+            Path rutaFoto = Paths.get("src\\main\\resources\\static\\fotos").resolve(nombreFoto).toAbsolutePath();
+
+            nuevoProducto.setNombre(nombre);
+            nuevoProducto.setDescripcion(desc);
+            try {
+                Files.copy(foto.getInputStream(), rutaFoto);
+                nuevoProducto.setFoto(nombreFoto);
+                service.guardarProducto(nuevoProducto);
+                response.put("producto", nuevoProducto);
+                response.put("mensaje", "Ha registrado correctamente el producto.");
+            } catch (Exception e) {
+                response.put("mensaje", "Error al subir la imagen");
+                return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+        } catch (DataAccessException e) {
+            response.put("message", "Error al registrar en la base de datos.");
+            response.put("error", e.getMessage().concat(": ").concat(e.getMostSpecificCause().getMessage()));
+            return new ResponseEntity<Map<String, Object>>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         return new ResponseEntity<Map<String, Object>>(response, HttpStatus.CREATED);
     }
 }

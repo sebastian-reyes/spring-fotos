@@ -48,9 +48,23 @@ El proyecto cuenta con 4 endpoints:
 (POST) http://localhost:9898/productos/foto
 ```
 
+## Clonar proyecto y modificaciones
+
+Puedes cambiar el nombre de la base de datos, ya que esta se creará automáticamente.
+```bash
+##Cambiar nombre de base de datos
+spring.datasource.url=jdbc:mysql://localhost:3306/{NOMBRE_BASE_DE_DATOS}?serverTimezone=UTC&createDatabaseIfNotExist=true
+```
+
+También puedes cambiar el puerto en que se desplegará el servidor.
+```bash
+##Cambio de puerto
+server.port={TU_PUERTO}
+```
+
 ## Tecnologías usadas
 - Java 8
-- MySQl
+- MySQL
 - Spring Framework
 - Lombok
 - JPA y JDBC
